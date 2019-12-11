@@ -3,20 +3,46 @@ const Posts = require('./postDb')
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   // do your magic!
+  try {
+    const posts = await Posts.get(req.query)
+    res.status(200).json(posts);
+  } catch (err) {
+    console.log(err)
+    res.status(500).json({
+      error: 'The posts information could not be retrieved.'
+    })
+  }
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', validatePostId(), (req, res) => {
   // do your magic!
+  res.json(req.post)
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', validatePostId(), (req, res) => {
   // do your magic!
+  Posts.remove(req.post.id)
+    .then(() => {
+      res.status(200).json({
+        message: 'The post has been deleted!'
+      }) 
+    })
+    .catch(error => {
+      next(error)
+    })
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', validatePost(), (req, res) => {
   // do your magic!
+  Posts.update(req.params.id, req.body)
+    .then(post => {
+      res.status(200).json(post)
+    })
+    .catch(error => {
+      next(error)
+    })
 });
 
 // custom middleware
@@ -41,6 +67,18 @@ function validatePostId(req, res, next) {
         message: 'Error retrieving post'
       })
     })
+  }
+}
+
+function validatePost(req, res, next) {
+  // do your magic!
+  return (req, res, next) => {
+    if (!req.body.text) {
+      return res.status(400).json({
+        message: 'Missing post content'
+      })
+    } 
+    next()
   }
 }
 
