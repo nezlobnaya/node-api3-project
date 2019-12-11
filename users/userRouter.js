@@ -28,7 +28,8 @@ router.get('/', async (req, res) => {
   // do your magic!
   try {
     const users = await Users.get(req.query)
-    res.status(200).json(users);
+    const messageOfTheDay = process.env.MOTD || "Catch 'em all!'"
+    res.status(200).json({ motd: messageOfTheDay, users });
   } catch (err) {
     console.log(err)
     res.status(500).json({
