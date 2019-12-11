@@ -1,9 +1,10 @@
 const express = require('express');
-
+const helmet = require('helmet')
 const userRouter = require('./users/userRouter')
 const postRouter = require('./posts/postRouter')
 const server = express();
 
+server.use(helmet())
 server.use(logger)
 server.use(express.json())
 
