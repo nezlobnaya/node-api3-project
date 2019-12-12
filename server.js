@@ -24,4 +24,10 @@ function logger(req, res, next) {
   next()
 }
 
+server.use((err, req, res, next) => {
+  res.status(500).json({
+    message: "Bad mistake!", err
+  })
+})
+
 module.exports = server;

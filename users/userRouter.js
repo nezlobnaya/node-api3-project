@@ -6,26 +6,34 @@ const Posts = require('../posts/postDb')
 const router = express.Router();
 
 
-router.post('/', validateUser(), async (req, res) => {
+router.post('/', validateUser, async (req, res, next) => {
   // do your magic!
     try {
-      const user = await Users.insert(req.body)
+      const payload = {
+        name: req.body.name,
+      }
+      const user = await Users.insert(payload)
       res.status(201).json(user)
     } catch(err) {
       next(err)
     }
 });
 
-router.post('/:id/posts', validateUserId(), validatePost(), (req, res) => {
+router.post('/:id/posts', validateUserId, validatePost, async (req, res, next) => {
   // do your magic!
-    Posts.insert({ user_id: req.user.id, ...req.body })
-      .then(post => res.status(201).json(post))
-      .catch(error =>
-        errorMessage(res, 500, `error adding post to the database`, error)
-      );
-  })
+  try {
+    const payload = {
+      text: req.body.text,
+      user_id: req.params.id
+    }
+    const post = await Posts.insert(payload)
+      res.status(201).json(post)
+  } catch(err) {
+     next(err)
+  }
+})
 
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
   // do your magic!
   try {
     const users = await Users.get(req.query)
@@ -33,18 +41,21 @@ router.get('/', async (req, res) => {
     res.status(200).json({ motd: messageOfTheDay , users });
   } catch (err) {
     console.log(err)
-    res.status(500).json({
-      error: 'The users information could not be retrieved.'
-    })
+    next(err)
   }
 });
 
-router.get('/:id', validateUserId(), (req, res) => {
+router.get('/:id', validateUserId, async (req, res, next) => {
   // do your magic!
-  res.json(req.user)
+  try {
+    res.json(await await Users.getById(req.params.id))
+  } catch (err){
+    next(err)
+  }
+ 
 });
 
-router.get('/:id/posts', validateUserId(), (req, res) => {
+router.get('/:id/posts', validateUserId, (req, res) => {
   // do your magic!
   Users.getUserPosts(req.user.id)
     .then(posts => res.status(200).json(posts))
@@ -55,38 +66,41 @@ router.get('/:id/posts', validateUserId(), (req, res) => {
     );
 });
 
-router.delete('/:id', validateUserId(), (req, res) => {
+router.delete('/:id', validateUserId, async (req, res, next) => {
   // do your magic!
-  Users.remove(req.user.id)
-    .then(() => {
-      res.status(200).json({
-        message: 'The user has been deleted'
-      })
+  try {
+    await Users.remove(req.params.id)
+    res.status(200).json({
+      message: 'The user has been deleted'
     })
-    .catch(error => {
-      next(error)
-    })
+    end()
+  } catch(err) {
+      next(err)
+    }
 });
 
-router.put('/:id', validateUser(), (req, res) => {
+router.put('/:id', validateUser, validateUserId, async (req, res, next) => {
   // do your magic!
-  Users.update(req.params.id, req.body)
-    .then(user => {
-      res.status(200).json(user)
-    })
-    .catch(error => {
-      next(error)
-    })
+  try {
+    const payload = {
+      name: req.body.name,
+    }
+
+    await Users.update(req.params.id, payload)
+    res.json(await Users.getById(req.params.id))
+  } catch(err) {
+      next(err)
+    }
 });
 
 //custom middleware
 
-function validateUserId(req, res, next) {
+async function validateUserId(req, res, next) {
   // do your magic!
-  return (req, res, next) => {
-    Users.getById(req.params.id)
-      .then(user => {
-        if (user) {
+  try {
+    const user = await Users.getById(req.params.id)
+  
+    if (user) {
           req.user = user
           next()
         } else {
@@ -94,37 +108,31 @@ function validateUserId(req, res, next) {
             message: 'User not found'
           }) 
         }
-      })
-          .catch(error => {
-            console.log(error)
-            res.status(500).json({
-              message: 'Error retrieving user'
-            })
-          })
-        }
-  }
+      } catch(err) {
+            console.log(err)
+        next(err)
+      }
+    }
 
 
 function validateUser(req, res, next) {
   // do your magic!
-  return (req, res, next) => {
     if (!req.body.name) {
-      return res.status(400).json({
+      res.status(400).json({
         message: 'Missing user name'
       })
-    } 
+    } else {
     next()
   }
 }
 
 function validatePost(req, res, next) {
   // do your magic!
-  return (req, res, next) => {
     if (!req.body.text) {
       return res.status(400).json({
         message: 'Missing post content'
       })
-    }
+    } else {
     next()
   }
 }
