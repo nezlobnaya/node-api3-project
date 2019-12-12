@@ -48,7 +48,7 @@ router.get('/', async (req, res, next) => {
 router.get('/:id', validateUserId, async (req, res, next) => {
   // do your magic!
   try {
-    res.json(await await Users.getById(req.params.id))
+    res.json(await Users.getById(req.params.id))
   } catch (err){
     next(err)
   }
