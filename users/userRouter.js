@@ -1,3 +1,4 @@
+// require('dotenv').config()
 const express = require('express');
 const Users = require('./userDb')
 const Posts = require('../posts/postDb')
